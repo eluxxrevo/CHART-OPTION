@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - Chart Option</title>
+  <style>
+    body { font-family: Arial; background: #0f172a; color: #fff; padding: 20px; }
+    input, button, select {
+      padding: 10px; margin: 10px 0; width: 100%;
+      background: #1f2937; border: 1px solid #374151; color: #fff;
+    }
+    .hidden { display: none; }
+    .btn { background: #10b981; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>Admin Panel</h2>
+
+  <div id="login">
+    <input type="email" id="adminEmail" placeholder="Email">
+    <input type="password" id="adminPass" placeholder="Password">
+    <button class="btn" onclick="verify()">Login</button>
+  </div>
+
+  <div id="panel" class="hidden">
+    <h3>Update Commodity Prices</h3>
+    <select id="asset">
+      <option value="gold">Gold</option>
+      <option value="silver">Silver</option>
+      <option value="bitcoin">Bitcoin</option>
+      <option value="bronze">Bronze</option>
+    </select>
+    <input type="number" id="price" placeholder="Enter Price">
+    <button class="btn" onclick="save()">Save Price</button>
+    <p id="message"></p>
+    <a href="index.html"><button class="btn">Back to App</button></a>
+  </div>
+
+  <script>
+    function verify() {
+      const email = document.getElementById('adminEmail').value;
+      const pass = document.getElementById('adminPass').value;
+      if (email === 'eluxxes@gmail.com' && pass === 'Ebube@123') {
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('panel').style.display = 'block';
+      } else {
+        alert('Incorrect credentials!');
+      }
+    }
+
+    function save() {
+      const asset = document.getElementById('asset').value;
+      const price = parseFloat(document.getElementById('price').value);
+      if (price > 0) {
+        localStorage.setItem('price_' + asset, price);
+        document.getElementById('message').innerText = `Saved ${asset.toUpperCase()} at $${price}`;
+      } else {
+        alert('Invalid price');
+      }
+    }
+  </script>
+</body>
+</html>

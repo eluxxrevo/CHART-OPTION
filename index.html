@@ -1,0 +1,208 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chart Option - Trading App</title>
+  <link rel="icon" href="favicon.ico" />
+  <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #fff;
+    }
+    header, nav, footer {
+      text-align: center;
+      padding: 12px;
+      background: #1e293b;
+    }
+    nav button, .btn {
+      background: #10b981;
+      color: white;
+      padding: 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .container {
+      padding: 20px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: white;
+      border-radius: 5px;
+    }
+    #chart {
+      height: 300px;
+    }
+    .tab { display: none; }
+    .tab.active { display: block; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Chart Option</h1>
+  </header>  <div id="auth">
+    <div class="container">
+      <h2>Login / Register</h2>
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button onclick="login()">Login</button>
+      <button onclick="register()">Register</button>
+    </div>
+  </div>  <div id="app" class="hidden">
+    <nav>
+      <button onclick="showTab('trade')">Trade</button>
+      <button onclick="showTab('wallet')">Wallet</button>
+      <button onclick="showTab('history')">History</button>
+      <button onclick="changeChartType()">Chart Type</button>
+      <button onclick="logout()">Logout</button>
+    </nav><div class="container">
+  <div id="trade" class="tab active">
+    <select id="asset" onchange="initChart()">
+      <option value="Gold">Gold</option>
+      <option value="Silver">Silver</option>
+      <option value="Bitcoin">Bitcoin</option>
+      <option value="Bronze">Bronze</option>
+    </select>
+    <input type="number" id="amount" placeholder="Amount to Trade">
+    <select id="duration">
+      <option value="30">30 sec</option>
+      <option value="60">60 sec</option>
+    </select>
+    <button class="btn" onclick="submitTrade('Buy')">Buy</button>
+    <button class="btn" onclick="submitTrade('Sell')">Sell</button>
+    <div id="chart"></div>
+  </div>
+
+  <div id="wallet" class="tab">
+    <p>Balance: $<span id="balance">0.00</span></p>
+    <input type="number" id="depositAmount" placeholder="Amount to Deposit">
+    <button onclick="deposit()">Deposit</button>
+    <a href="https://paystack.com/buy/candle-option-arqlup" target="_blank">
+      <button class="btn">Pay via Paystack</button>
+    </a>
+    <input type="number" id="withdrawAmount" placeholder="Amount to Withdraw">
+    <input type="text" id="walletAddress" placeholder="Your Wallet Address">
+    <button onclick="withdraw()">Withdraw</button>
+  </div>
+
+  <div id="history" class="tab">
+    <h3>Trade History</h3>
+    <ul id="historyList"></ul>
+  </div>
+</div>
+
+  </div>  <footer>
+    Endorsed by CHUKWU EBUBECHI (Reverend)
+  </footer>  <script>
+    let balance = 0, chart, series, chartType = 'Candlestick', data = [], user, history = [];
+
+    function showTab(id) {
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function login() {
+      const email = emailInput.value, pass = passwordInput.value;
+      const users = JSON.parse(localStorage.getItem('users') || '{}');
+      if (users[email] && users[email].pass === pass) {
+        user = email;
+        document.getElementById('auth').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        balance = parseFloat(localStorage.getItem(user+'_bal') || 0);
+        document.getElementById('balance').textContent = balance.toFixed(2);
+        initChart();
+        setInterval(updateChart, 2000);
+      } else alert('Login failed');
+    }
+
+    function register() {
+      const email = emailInput.value, pass = passwordInput.value;
+      let users = JSON.parse(localStorage.getItem('users') || '{}');
+      if (users[email]) return alert('User exists');
+      users[email] = { pass };
+      localStorage.setItem('users', JSON.stringify(users));
+      alert('Registered! Please login.');
+    }
+
+    function logout() { location.reload(); }
+
+    function deposit() {
+      const amt = parseFloat(document.getElementById('depositAmount').value);
+      if (amt > 0) {
+        balance += amt;
+        localStorage.setItem(user+'_bal', balance);
+        document.getElementById('balance').textContent = balance.toFixed(2);
+      }
+    }
+
+    function withdraw() {
+      const amt = parseFloat(document.getElementById('withdrawAmount').value);
+      const addr = document.getElementById('walletAddress').value;
+      if (amt > 0 && amt <= balance) {
+        balance -= amt;
+        localStorage.setItem(user+'_bal', balance);
+        document.getElementById('balance').textContent = balance.toFixed(2);
+        alert(`$${amt} will be sent to ${addr}`);
+      }
+    }
+
+    function submitTrade(type) {
+      const amt = parseFloat(document.getElementById('amount').value);
+      if (amt > balance || amt <= 0) return alert('Invalid amount');
+      balance -= amt;
+      const win = Math.random() > 0.5;
+      const profit = win ? amt * 0.4 : 0;
+      if (win) balance += amt + profit;
+      localStorage.setItem(user+'_bal', balance);
+      document.getElementById('balance').textContent = balance.toFixed(2);
+      history.unshift(`${type} ${win ? 'WIN' : 'LOSS'} (+$${profit.toFixed(2)})`);
+      document.getElementById('historyList').innerHTML = history.map(h => `<li>${h}</li>`).join('');
+      const sound = new Audio(win ? 'https://cdn.pixabay.com/audio/2021/08/04/audio_d3e55b20a1.mp3' : 'https://cdn.pixabay.com/audio/2021/08/04/audio_d0c9fae7a4.mp3');
+      sound.play();
+    }
+
+    function changeChartType() {
+      chartType = chartType === 'Candlestick' ? 'Line' : chartType === 'Line' ? 'Bar' : 'Candlestick';
+      initChart();
+    }
+
+    function initChart() {
+      const asset = document.getElementById('asset').value;
+      const basePrice = parseFloat(localStorage.getItem('price_'+asset.toLowerCase())) || 1000 + Math.random()*50;
+      const c = document.getElementById('chart');
+      c.innerHTML = '';
+      chart = LightweightCharts.createChart(c, { layout: { backgroundColor: '#0f172a', textColor: '#ffffff' }, width: c.clientWidth, height: 300 });
+      series = chartType === 'Candlestick' ? chart.addCandlestickSeries() : chartType === 'Line' ? chart.addLineSeries() : chart.addBarSeries();
+      data = [];
+      const now = Math.floor(Date.now() / 1000);
+      for (let i = 30; i >= 0; i--) {
+        const t = now - i;
+        const val = basePrice + (Math.random() - 0.5) * 10;
+        data.push({ time: t, open: val, high: val + 3, low: val - 3, close: val });
+      }
+      series.setData(data);
+    }
+
+    function updateChart() {
+      const t = Math.floor(Date.now() / 1000);
+      const last = data[data.length - 1].close;
+      const close = last + (Math.random() - 0.5) * 5;
+      data.push({ time: t, open: last, high: Math.max(last, close), low: Math.min(last, close), close });
+      if (data.length > 60) data.shift();
+      series.setData(data);
+    }
+
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+  </script></body>
+</html>
